@@ -1,3 +1,10 @@
+import { useState, useEffect, useRef } from 'react'
+import { listenToPlayers } from '../services/presence'
+import { listenInvitations } from '../services/invitations'
+import { rtdb } from '../firebase'
+import { ref, push, set, onValue } from 'firebase/database'
+import InviteModal from '../components/InviteModal'
+import IncomingInvite from '../components/IncomingInvite'
 
 export default function Lobby({ ctx }) {
   const { user, navigate, showToast, setOpponent } = ctx
@@ -35,7 +42,7 @@ export default function Lobby({ ctx }) {
         navigate('game')
       } else if (data.status === 'declined') {
         setWaiting(false)
-        showToast(`❌ ${opponent.username} a refusé l'invitation`)
+        showToast(`❌ ${opponent.username} a refusé`)
       }
     })
   }
@@ -47,12 +54,9 @@ export default function Lobby({ ctx }) {
       const invitesRef = ref(rtdb, `invitations/${player.uid}`)
       const newInvRef  = push(invitesRef)
       await set(newInvRef, {
-        fromUid:      user.uid,
-        fromUsername: user.username,
-        fromAvatar:   user.avatar,
-        fromElo:      user.elo,
-        status:       'pending',
-        timestamp:    Date.now(),
+        fromUid: user.uid, fromUsername: user.username,
+        fromAvatar: user.avatar, fromElo: user.elo,
+        status: 'pending', timestamp: Date.now(),
       })
       showToast(`📨 Invitation envoyée à ${player.username}…`)
       listenForAccept(player.uid, newInvRef.key, {
@@ -108,14 +112,13 @@ export default function Lobby({ ctx }) {
   return (
     <div className="px-5 py-5">
       <div className="text-center mb-5">
-        <div style={{fontFamily:'Cormorant Garamond, serif',
-          fontStyle:'italic',fontWeight:300,
-          color:'rgba(251,191,36,0.5)',fontSize:'13px',
+        <div style={{fontFamily:'Cormorant Garamond, serif',fontStyle:'italic',
+          fontWeight:300,color:'rgba(251,191,36,0.5)',fontSize:'13px',
           letterSpacing:'3px',textTransform:'uppercase',marginBottom:'4px'}}>
           Choisir un adversaire
         </div>
-        <div style={{fontFamily:'Cormorant Garamond, serif',fontWeight:600,fontSize:'30px',
-          background:'linear-gradient(135deg,#fcd34d,#fbbf24,#f59e0b)',
+        <div style={{fontFamily:'Cormorant Garamond, serif',fontWeight:600,
+          fontSize:'30px',background:'linear-gradient(135deg,#fcd34d,#fbbf24,#f59e0b)',
           WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
           L'Arène Mondiale
         </div>
@@ -134,15 +137,18 @@ export default function Lobby({ ctx }) {
             border:'3px solid rgba(251,191,36,0.2)',borderTopColor:'#fbbf24',
             animation:'spin 0.8s linear infinite'}}/>
           <div style={{flex:1}}>
-            <div style={{fontFamily:'Jost',fontWeight:600,fontSize:'14px',color:'#fbbf24'}}>
+            <div style={{fontFamily:'Jost',fontWeight:600,
+              fontSize:'14px',color:'#fbbf24'}}>
               En attente de réponse…
             </div>
-            <div style={{fontFamily:'Jost',fontSize:'12px',color:'rgba(251,191,36,0.4)'}}>
+            <div style={{fontFamily:'Jost',fontSize:'12px',
+              color:'rgba(251,191,36,0.4)'}}>
               L'adversaire doit accepter ton invitation
             </div>
           </div>
-          <button onClick={cancelWaiting} style={{padding:'8px 14px',borderRadius:'10px',
-            background:'rgba(232,66,90,0.1)',border:'1px solid rgba(232,66,90,0.25)',
+          <button onClick={cancelWaiting} style={{padding:'8px 14px',
+            borderRadius:'10px',background:'rgba(232,66,90,0.1)',
+            border:'1px solid rgba(232,66,90,0.25)',
             color:'#fca5a5',fontFamily:'Jost',fontSize:'12px',cursor:'pointer'}}>
             Annuler
           </button>
@@ -186,9 +192,10 @@ export default function Lobby({ ctx }) {
             <span style={{width:'8px',height:'8px',borderRadius:'50%',
               background:t.dot,display:'inline-block'}}/>
             {t.label}
-            <span style={{fontSize:'10px',fontWeight:700,padding:'2px 7px',
-              borderRadius:'20px',
-              background:t.id==='available'?'rgba(16,185,129,0.15)':'rgba(232,66,90,0.12)',
+            <span style={{fontSize:'10px',fontWeight:700,
+              padding:'2px 7px',borderRadius:'20px',
+              background:t.id==='available'
+                ?'rgba(16,185,129,0.15)':'rgba(232,66,90,0.12)',
               color:t.id==='available'?'#6ee7b7':'#fca5a5'}}>
               {t.count}
             </span>
@@ -196,12 +203,17 @@ export default function Lobby({ ctx }) {
         ))}
       </div>
 
-      <div style={{display:'flex',flexDirection:'column',gap:'8px',paddingBottom:'16px'}}>
+      <div style={{display:'flex',flexDirection:'column',
+        gap:'8px',paddingBottom:'16px'}}>
         {filtered.length===0 && (
           <div style={{textAlign:'center',padding:'48px 0',
-            display:'flex',flexDirection:'column',alignItems:'center',gap:'12px'}}>
-            <div style={{fontSize:'40px'}}>{tab==='available'?'🌍':'😴'}</div>
-            <div style={{fontFamily:'Jost',color:'rgba(251,191,36,0.3)',fontSize:'14px'}}>
+            display:'flex',flexDirection:'column',
+            alignItems:'center',gap:'12px'}}>
+            <div style={{fontSize:'40px'}}>
+              {tab==='available'?'🌍':'😴'}
+            </div>
+            <div style={{fontFamily:'Jost',
+              color:'rgba(251,191,36,0.3)',fontSize:'14px'}}>
               {tab==='available'?'Aucun joueur disponible':'Aucun joueur occupé'}
             </div>
           </div>
@@ -218,35 +230,41 @@ export default function Lobby({ ctx }) {
             <div style={{position:'relative',flexShrink:0}}>
               <div style={{width:'48px',height:'48px',borderRadius:'50%',
                 background:'rgba(22,41,79,0.8)',
-                border:`2px solid ${p.available?'rgba(16,185,129,0.5)':'rgba(232,66,90,0.35)'}`,
-                display:'flex',alignItems:'center',justifyContent:'center',fontSize:'24px'}}>
+                border:`2px solid ${p.available
+                  ?'rgba(16,185,129,0.5)':'rgba(232,66,90,0.35)'}`,
+                display:'flex',alignItems:'center',
+                justifyContent:'center',fontSize:'24px'}}>
                 {p.avatar}
               </div>
               <div style={{position:'absolute',bottom:'1px',right:'1px',
                 width:'13px',height:'13px',borderRadius:'50%',
-                background:p.available?'#10b981':'#e8425a',border:'2px solid #03060f'}}/>
+                background:p.available?'#10b981':'#e8425a',
+                border:'2px solid #03060f'}}/>
             </div>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontFamily:'Jost',fontWeight:600,fontSize:'14px',color:'#e8dfc8'}}>
-                {p.username}
-              </div>
-              <div style={{fontFamily:'Jost',fontSize:'11px',color:'rgba(251,191,36,0.45)'}}>
+              <div style={{fontFamily:'Jost',fontWeight:600,
+                fontSize:'14px',color:'#e8dfc8'}}>{p.username}</div>
+              <div style={{fontFamily:'Jost',fontSize:'11px',
+                color:'rgba(251,191,36,0.45)'}}>
                 {p.country} · {p.elo} ELO
               </div>
               {p.statusMsg&&(
-                <div style={{fontFamily:'Jost',fontSize:'11px',fontStyle:'italic',
-                  color:'rgba(251,191,36,0.35)',marginTop:'2px',
-                  overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                <div style={{fontFamily:'Jost',fontSize:'11px',
+                  fontStyle:'italic',color:'rgba(251,191,36,0.35)',
+                  marginTop:'2px',overflow:'hidden',
+                  textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
                   💬 {p.statusMsg}
                 </div>
               )}
             </div>
-            <div style={{padding:'6px 12px',borderRadius:'20px',fontSize:'11px',
-              fontWeight:700,textTransform:'uppercase',letterSpacing:'1px',
-              flexShrink:0,fontFamily:'Jost',
-              background:p.available?'rgba(16,185,129,0.1)':'rgba(232,66,90,0.08)',
+            <div style={{padding:'6px 12px',borderRadius:'20px',
+              fontSize:'11px',fontWeight:700,textTransform:'uppercase',
+              letterSpacing:'1px',flexShrink:0,fontFamily:'Jost',
+              background:p.available
+                ?'rgba(16,185,129,0.1)':'rgba(232,66,90,0.08)',
               color:p.available?'#6ee7b7':'#fca5a5',
-              border:`1px solid ${p.available?'rgba(16,185,129,0.25)':'rgba(232,66,90,0.18)'}`}}>
+              border:`1px solid ${p.available
+                ?'rgba(16,185,129,0.25)':'rgba(232,66,90,0.18)'}`}}>
               {p.available?'● Dispo':'● Occupé'}
             </div>
           </div>
@@ -255,14 +273,13 @@ export default function Lobby({ ctx }) {
 
       {selected && (
         <InviteModal
-          player={{...selected,name:selected.username,av:selected.avatar,
-            rank:selected.elo,wins:selected.wins||0}}
+          player={{...selected,name:selected.username,
+            av:selected.avatar,rank:selected.elo,wins:selected.wins||0}}
           ctx={ctx}
           onClose={() => setSelected(null)}
           onInvite={() => handleInvite(selected)}
         />
       )}
-
       {incoming && (
         <IncomingInvite
           invite={incoming}
