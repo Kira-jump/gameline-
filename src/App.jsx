@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { auth, db } from './firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
+import { setPresence } from './services/presence'
 
 import Register from './screens/Register'
 import Tutorial from './screens/Tutorial'
@@ -26,19 +27,22 @@ export default function App() {
   })
   const [opponent, setOpponent] = useState(null)
 
-  // Auth listener
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
           const snap = await getDoc(doc(db, 'users', firebaseUser.uid))
           if (snap.exists()) {
-            setUser({ ...snap.data(), uid: firebaseUser.uid })
+            const userData = { ...snap.data(), uid: firebaseUser.uid }
+            setUser(userData)
+            // 🔥 Set presence dès la connexion
+            await setPresence(firebaseUser.uid, userData)
             setScreen('home')
           } else {
             setScreen('register')
           }
         } catch (e) {
+          console.error(e)
           setScreen('register')
         }
       } else {
@@ -55,10 +59,8 @@ export default function App() {
   }
 
   const navigate = (s) => setScreen(s)
-
   const ctx = { user, setUser, opponent, setOpponent, navigate, showToast }
-
-  const showNav = !['register','tutorial','loading'].includes(screen)
+  const showNav = !['register','tutorial'].includes(screen)
 
   if (loading) return (
     <div style={{
@@ -90,14 +92,12 @@ export default function App() {
     <div className="relative flex flex-col h-screen w-full max-w-[430px] mx-auto overflow-hidden"
       style={{background:'#03060f', color:'#e8dfc8'}}>
 
-      {/* Ambient BG */}
       <div className="fixed inset-0 pointer-events-none z-0" style={{
         background:`
           radial-gradient(ellipse 80% 60% at 50% 0%, rgba(22,41,79,0.6) 0%, transparent 65%),
           radial-gradient(ellipse 60% 50% at 10% 90%, rgba(251,191,36,0.04) 0%, transparent 55%)`
       }}/>
 
-      {/* Grid texture */}
       <div className="fixed inset-0 pointer-events-none z-0" style={{
         backgroundImage:`
           linear-gradient(rgba(251,191,36,0.025) 1px,transparent 1px),
@@ -107,7 +107,6 @@ export default function App() {
 
       <div className="relative z-10 flex flex-col h-full">
         {showNav && <TopBar ctx={ctx} />}
-
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
           {screen === 'register'    && <Register    ctx={ctx} />}
           {screen === 'tutorial'    && <Tutorial    ctx={ctx} />}
@@ -117,7 +116,6 @@ export default function App() {
           {screen === 'leaderboard' && <Leaderboard ctx={ctx} />}
           {screen === 'tournaments' && <Tournaments ctx={ctx} />}
         </div>
-
         {showNav && <BottomNav screen={screen} navigate={navigate} />}
       </div>
 
