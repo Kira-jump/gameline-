@@ -12,15 +12,14 @@ export default function Lobby({ ctx }) {
   const [selected, setSelected] = useState(null)
   const [incoming, setIncoming] = useState(null)
 
-  // Écoute joueurs en ligne
   useEffect(() => {
     const unsub = listenToPlayers((all) => {
+      // On garde tout le monde SAUF soi-même
       setPlayers(all.filter(p => p.uid !== user.uid))
     })
     return () => unsub()
   }, [user.uid])
 
-  // Écoute invitations reçues
   useEffect(() => {
     if (!user.uid) return
     const unsub = listenInvitations(user.uid, (inv) => {
@@ -86,6 +85,10 @@ export default function Lobby({ ctx }) {
         }}>
           L'Arène Mondiale
         </div>
+        <div style={{fontFamily:'Jost',fontSize:'12px',
+          color:'rgba(251,191,36,0.3)',marginTop:'4px'}}>
+          {players.length} joueur{players.length > 1 ? 's' : ''} en ligne
+        </div>
       </div>
 
       {/* Search */}
@@ -96,16 +99,10 @@ export default function Lobby({ ctx }) {
         border:'1px solid rgba(251,191,36,0.12)'
       }}>
         <span style={{color:'rgba(251,191,36,0.4)',fontSize:'18px'}}>🔍</span>
-        <input
-          type="text"
-          placeholder="Rechercher un joueur..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{
-            flex:1, background:'transparent', border:'none',
-            color:'#e8dfc8', fontFamily:'Jost, sans-serif',
-            fontSize:'14px', outline:'none'
-          }}
+        <input type="text" placeholder="Rechercher un joueur..."
+          value={search} onChange={e => setSearch(e.target.value)}
+          style={{flex:1,background:'transparent',border:'none',
+            color:'#e8dfc8',fontFamily:'Jost',fontSize:'14px',outline:'none'}}
         />
       </div>
 
@@ -123,8 +120,8 @@ export default function Lobby({ ctx }) {
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             flex:1, padding:'10px 12px', borderRadius:'10px',
             display:'flex', alignItems:'center', justifyContent:'center', gap:'7px',
-            fontFamily:'Jost, sans-serif', fontSize:'12px',
-            fontWeight:600, letterSpacing:'1px', textTransform:'uppercase',
+            fontFamily:'Jost', fontSize:'12px', fontWeight:600,
+            letterSpacing:'1px', textTransform:'uppercase',
             cursor:'pointer', transition:'all 0.22s', border:'none',
             background: tab===t.id
               ? t.id==='available' ? 'rgba(16,185,129,0.1)' : 'rgba(232,66,90,0.08)'
@@ -188,7 +185,6 @@ export default function Lobby({ ctx }) {
               transition:'all 0.22s'
             }}
           >
-            {/* Avatar */}
             <div style={{position:'relative',flexShrink:0}}>
               <div style={{
                 width:'48px', height:'48px', borderRadius:'50%',
@@ -209,7 +205,6 @@ export default function Lobby({ ctx }) {
               }}/>
             </div>
 
-            {/* Info */}
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontFamily:'Jost',fontWeight:600,
                 fontSize:'14px',color:'#e8dfc8'}}>
@@ -229,7 +224,6 @@ export default function Lobby({ ctx }) {
               )}
             </div>
 
-            {/* Status pill */}
             <div style={{
               padding:'6px 12px', borderRadius:'20px',
               fontSize:'11px', fontWeight:700,
@@ -247,7 +241,6 @@ export default function Lobby({ ctx }) {
         ))}
       </div>
 
-      {/* Modals */}
       {selected && (
         <InviteModal
           player={{
